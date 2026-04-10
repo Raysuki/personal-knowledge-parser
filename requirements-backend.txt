@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+python-multipart
+pillow
+pymupdf
+python-docx
+numpy
+paddleocr
+volcengine-python-sdk[ark]
