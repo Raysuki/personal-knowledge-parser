@@ -14,15 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <body suppressHydrationWarning>
-        <div className="site-video-bg" aria-hidden="true">
-          <video className="site-video-bg__media" autoPlay muted loop playsInline preload="auto">
-            <source src="/background.mp4" type="video/mp4" />
-          </video>
-          <div className="site-video-bg__overlay" />
-        </div>
-        <div className="site-shell">{children}</div>
-      </body>
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }

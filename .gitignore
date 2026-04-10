@@ -1,1 +1,11 @@
-node_modules
+node_modules/
+.next/
+.paddlex-cache/
+__pycache__/
+*.pyc
+*.pyo
+*.log
+.env
+knowledge_base.db
+_backup_current_20260410/
+/background.mp4
