@@ -416,6 +416,8 @@ export default function KnowledgeParsePage() {
   const [toast, setToast] = useState<{ message: string; tone: "success" | "error"; visible: boolean } | null>(null);
   const dragRef = useRef({ isDragging: false, hasDragged: false, startX: 0, startY: 0 });
   const renameInputRef = useRef<HTMLInputElement | null>(null);
+  const toolBarRef = useRef<HTMLDivElement | null>(null);
+  const toolPanelRef = useRef<HTMLElement | null>(null);
   const toastTimeoutRef = useRef<number | null>(null);
   const toastCleanupRef = useRef<number | null>(null);
   const isImage = useMemo(() => file?.type.startsWith("image/") ?? false, [file]);
@@ -460,6 +462,23 @@ export default function KnowledgeParsePage() {
   useEffect(() => {
     if (isDrawerOpen) setIsToolPanelOpen(false);
   }, [isDrawerOpen]);
+
+  useEffect(() => {
+    if (!isToolPanelOpen) return;
+
+    function handlePointerDown(event: PointerEvent | globalThis.PointerEvent) {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (toolPanelRef.current?.contains(target)) return;
+      if (toolBarRef.current?.contains(target)) return;
+      setIsToolPanelOpen(false);
+    }
+
+    window.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [isToolPanelOpen]);
 
   useEffect(() => {
     if (!selectedBaseId) return;
@@ -1003,14 +1022,20 @@ export default function KnowledgeParsePage() {
       <div className="page-glow" />
       <div className="mx-auto flex h-full max-w-[1500px] flex-col">
         <div className="mb-8 px-3">
-          <div className="relative max-w-[700px]">
+          <div className="relative max-w-[980px]">
             <div className="pointer-events-none absolute -left-8 top-2 h-24 w-24 rounded-full bg-violet-300/20 blur-3xl" />
             <div className="pointer-events-none absolute left-44 top-0 h-16 w-40 bg-[linear-gradient(90deg,rgba(167,139,250,0),rgba(167,139,250,0.26),rgba(167,139,250,0))] blur-2xl" />
-            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.5em] text-violet-500/90">Jianliu ProfileFlow</p>
-            <h1 className="text-[34px] font-black leading-none tracking-[-0.08em] text-neutral-950 md:text-[60px]">
-              简流
-              <span className="ml- inline-block bg-[linear-gradient(135deg,#24103f_0%,#7c3aed_58%,#c4b5fd_100%)] bg-clip-text text-transparent">ProfileFlow</span>
-            </h1>
+            <p className="text-[10px] font-semibold text-[#7c6999] md:text-[11px]">Jianliu ProfileFlow</p>
+            <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div className="max-w-[720px]">
+                <h1 className="text-[3rem] font-extrabold leading-[0.9] tracking-[-0.08em] text-[#2c2738] md:text-[5.3rem]">
+                  简流
+                  <span className="ml-2 inline-block bg-[linear-gradient(135deg,#34146c_0%,#4b2e83_45%,#b7a9da_100%)] bg-clip-text text-transparent md:ml-5">
+                    ProfileFlow+
+                  </span>
+                </h1>
+              </div>
+            </div>
             <p className="mt-4 max-w-[520px] pl-[2px] text-[15px] leading-7 text-neutral-600 md:text-[18px]">
               履历如流，填表轻松。
             </p>
@@ -1018,7 +1043,7 @@ export default function KnowledgeParsePage() {
         </div>
 
         <div className="relative min-h-0 flex-1">
-          <div className="fixed left-5 top-1/2 z-[70] -translate-y-1/2">
+          <div ref={toolBarRef} className="fixed left-5 top-1/2 z-[70] -translate-y-1/2">
             <div className="flex flex-col gap-3 rounded-[1.7rem] border border-white/85 bg-white/92 p-2 shadow-[0_18px_40px_rgba(139,92,246,0.16)] backdrop-blur-xl">
               <button
                 type="button"
@@ -1057,7 +1082,7 @@ export default function KnowledgeParsePage() {
             </div>
           </div>
 
-          <section className={cn("absolute left-[92px] top-1/2 z-[60] flex h-[80%] w-full max-w-[448px] -translate-y-1/2 flex-col rounded-[2rem] border border-white/92 bg-[linear-gradient(180deg,rgba(255,255,255,0.99),rgba(249,244,255,0.96))] p-7 shadow-[0_30px_70px_rgba(109,40,217,0.18)] backdrop-blur-xl transition-all duration-500 ease-out", isToolPanelOpen ? "translate-x-0 opacity-100" : "-translate-x-[110%] opacity-0 pointer-events-none")}>
+          <section ref={toolPanelRef} className={cn("absolute left-[92px] top-1/2 z-[60] flex h-[80%] w-full max-w-[448px] -translate-y-1/2 flex-col rounded-[2rem] border border-white/92 bg-[linear-gradient(180deg,rgba(255,255,255,0.99),rgba(249,244,255,0.96))] p-7 shadow-[0_30px_70px_rgba(109,40,217,0.18)] backdrop-blur-xl transition-all duration-500 ease-out", isToolPanelOpen ? "translate-x-0 opacity-100" : "-translate-x-[110%] opacity-0 pointer-events-none")}>
             <div className="flex flex-1 flex-col pt-3">
               {leftPanelTab === "upload" ? (
                 <div className="flex flex-1 flex-col justify-center">
