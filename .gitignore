@@ -9,3 +9,7 @@ __pycache__/
 knowledge_base.db
 _backup_current_20260410/
 /background.mp4
+out/
+desktop-dist/
+.pyinstaller/
+.tmp-desktop-runtime/

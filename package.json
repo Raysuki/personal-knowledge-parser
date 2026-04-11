@@ -2,11 +2,17 @@
   "name": "personal-knowledge-parser",
   "version": "0.1.0",
   "private": true,
+  "main": "desktop/main.cjs",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "build:renderer": "next build",
+    "build:backend": "node desktop/build-backend.cjs",
+    "desktop:dev": "npm run build:renderer && electron .",
+    "desktop:start": "electron .",
+    "build:desktop": "npm run build:renderer && npm run build:backend && electron-builder --win nsis"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
@@ -20,7 +26,39 @@
     "@types/react-dom": "^19.0.2",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
+    "electron": "^35.1.5",
+    "electron-builder": "^26.0.12",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.2"
+  },
+  "build": {
+    "appId": "com.raysuki.profileflow",
+    "productName": "ProfileFlow",
+    "files": [
+      "desktop/**/*",
+      "out/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "desktop-dist/backend",
+        "to": "backend"
+      }
+    ],
+    "directories": {
+      "buildResources": "public"
+    },
+    "asar": true,
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false
+    }
   }
 }

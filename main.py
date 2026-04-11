@@ -10,6 +10,7 @@ import tempfile
 import urllib.parse
 import zipfile
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import fitz
@@ -24,15 +25,67 @@ from PIL import Image
 from pydantic import BaseModel
 from volcenginesdkarkruntime import Ark
 
-
-load_dotenv()
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(PROJECT_DIR, "knowledge_base.db")
-os.environ.setdefault("PADDLE_PDX_CACHE_HOME", os.path.join(PROJECT_DIR, ".paddlex-cache"))
+APP_NAME = "ProfileFlow"
+PROJECT_DIR = Path(__file__).resolve().parent
+
+
+def get_runtime_mode() -> str:
+    return os.getenv("PROFILEFLOW_RUNTIME_MODE", "browser").strip().lower() or "browser"
+
+
+def get_runtime_data_dir() -> Path:
+    configured = os.getenv("PROFILEFLOW_DATA_DIR")
+    if configured:
+        data_dir = Path(configured)
+    elif get_runtime_mode() == "desktop":
+        appdata_root = Path(os.getenv("APPDATA") or (Path.home() / "AppData" / "Roaming"))
+        data_dir = appdata_root / APP_NAME
+    else:
+        data_dir = PROJECT_DIR
+
+    data_dir.mkdir(parents=True, exist_ok=True)
+    return data_dir
+
+
+RUNTIME_MODE = get_runtime_mode()
+RUNTIME_DATA_DIR = get_runtime_data_dir()
+CONFIG_PATH = RUNTIME_DATA_DIR / "config.env"
+DB_PATH = str(RUNTIME_DATA_DIR / "knowledge_base.db")
+
+
+def ensure_runtime_config_template() -> None:
+    if CONFIG_PATH.exists() or RUNTIME_MODE != "desktop":
+        return
+
+    CONFIG_PATH.write_text(
+        "\n".join(
+            [
+                "ARK_API_KEY=",
+                "ARK_BASE_URL=https://ark.cn-beijing.volces.com/api/v3",
+                "ARK_TEXT_ENDPOINT_ID=",
+                "ARK_VISION_ENDPOINT_ID=",
+                "ARK_TIMEOUT=180",
+                "ARK_MAX_TOKENS=4000",
+                "OCR_LANG=ch",
+                "PDF_TEXT_THRESHOLD=80",
+                "MAX_TEXT_CHARS=12000",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+
+load_dotenv(PROJECT_DIR / ".env", override=False)
+ensure_runtime_config_template()
+load_dotenv(CONFIG_PATH, override=True)
+
+os.environ.setdefault("PROFILEFLOW_RUNTIME_MODE", RUNTIME_MODE)
+os.environ.setdefault("PROFILEFLOW_DATA_DIR", str(RUNTIME_DATA_DIR))
+os.environ.setdefault("PADDLE_PDX_CACHE_HOME", str(RUNTIME_DATA_DIR / ".paddlex-cache"))
 os.environ.setdefault("PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK", "True")
 
 app = FastAPI(title="Experience Proof Extract API")
@@ -43,6 +96,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ],
+    allow_origin_regex=r"^null$|^https?://(localhost|127\.0\.0\.1):3000$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -78,6 +132,17 @@ SUPPORTED_TEXT_TYPES = {"text/plain"}
 _ocr_engine = None
 
 
+def get_missing_config_keys() -> List[str]:
+    missing: List[str] = []
+    if not ARK_API_KEY:
+        missing.append("ARK_API_KEY")
+    if not ARK_TEXT_ENDPOINT_ID:
+        missing.append("ARK_TEXT_ENDPOINT_ID")
+    if not ARK_VISION_ENDPOINT_ID:
+        missing.append("ARK_VISION_ENDPOINT_ID")
+    return missing
+
+
 class KnowledgeSavePayload(BaseModel):
     knowledge_base_id: int
     doc_id: Optional[int] = None
@@ -100,6 +165,9 @@ class KnowledgeBaseRenamePayload(BaseModel):
 @app.on_event("startup")
 async def startup_event() -> None:
     init_db()
+    logger.info("RUNTIME_MODE=%s", RUNTIME_MODE)
+    logger.info("RUNTIME_DATA_DIR=%s", RUNTIME_DATA_DIR)
+    logger.info("CONFIG_PATH=%s", CONFIG_PATH)
     logger.info("ARK_BASE_URL=%s", ARK_BASE_URL)
     logger.info("ARK_TEXT_ENDPOINT_ID=%s", ARK_TEXT_ENDPOINT_ID)
     logger.info("ARK_VISION_ENDPOINT_ID=%s", ARK_VISION_ENDPOINT_ID)
@@ -1503,10 +1571,23 @@ async def fill_template(
 
 @app.get("/health")
 async def health() -> Dict[str, Any]:
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "mode": RUNTIME_MODE,
+        "configPath": str(CONFIG_PATH),
+        "dataDir": str(RUNTIME_DATA_DIR),
+        "missingConfigKeys": get_missing_config_keys(),
+    }
+
+
+def run_server() -> None:
+    import uvicorn
+
+    host = os.getenv("PROFILEFLOW_HOST", "127.0.0.1")
+    port = int(os.getenv("PROFILEFLOW_PORT", "8000"))
+    reload_enabled = os.getenv("PROFILEFLOW_RELOAD", "true").lower() == "true" and RUNTIME_MODE != "desktop"
+    uvicorn.run("main:app", host=host, port=port, reload=reload_enabled)
 
 
 if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    run_server()

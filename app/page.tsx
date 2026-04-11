@@ -28,6 +28,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { apiFetch, getBackendConnectionErrorMessage } from "@/lib/api-client";
+import { getDesktopAppInfo, getDesktopBackendStatus, type DesktopAppInfo, type DesktopBackendStatus, isDesktopRuntime } from "@/lib/desktop-config";
 import { cn } from "@/lib/utils";
 
 type BasicInfo = {
@@ -414,6 +416,8 @@ export default function KnowledgeParsePage() {
     detail: "",
   });
   const [toast, setToast] = useState<{ message: string; tone: "success" | "error"; visible: boolean } | null>(null);
+  const [desktopAppInfo, setDesktopAppInfo] = useState<DesktopAppInfo | null>(null);
+  const [desktopBackendStatus, setDesktopBackendStatus] = useState<DesktopBackendStatus | null>(null);
   const dragRef = useRef({ isDragging: false, hasDragged: false, startX: 0, startY: 0 });
   const renameInputRef = useRef<HTMLInputElement | null>(null);
   const toolBarRef = useRef<HTMLDivElement | null>(null);
@@ -431,6 +435,7 @@ export default function KnowledgeParsePage() {
   );
 
   useEffect(() => {
+    void loadDesktopContext();
     void loadKnowledgeBases();
   }, []);
 
@@ -518,10 +523,21 @@ export default function KnowledgeParsePage() {
     }, 1600);
   }
 
+  async function loadDesktopContext() {
+    try {
+      const [appInfo, backendStatus] = await Promise.all([getDesktopAppInfo(), getDesktopBackendStatus()]);
+      setDesktopAppInfo(appInfo);
+      setDesktopBackendStatus(backendStatus);
+    } catch {
+      setDesktopAppInfo(null);
+      setDesktopBackendStatus(null);
+    }
+  }
+
   async function loadKnowledgeBases() {
     setIsBaseLoading(true);
     try {
-      const response = await fetch("http://localhost:8000/api/knowledge-bases");
+      const response = await apiFetch("/api/knowledge-bases");
       const payload = (await response.json()) as KnowledgeBaseListResponse;
       if (!response.ok) throw new Error(payload.detail || "加载知识库列表失败。");
       const items = Array.isArray(payload.items)
@@ -537,7 +553,8 @@ export default function KnowledgeParsePage() {
       setSelectedBaseId((prev) => (prev && items.some((item) => item.id === prev) ? prev : items[0].id));
       setCurrentIndex((prev) => Math.min(prev, items.length - 1));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "加载知识库列表失败，请检查后端服务。");
+      if (err instanceof TypeError) setError(getBackendConnectionErrorMessage());
+      else setError(err instanceof Error ? err.message : "加载知识库列表失败，请检查后端服务。");
     } finally {
       setIsBaseLoading(false);
     }
@@ -608,13 +625,13 @@ export default function KnowledgeParsePage() {
         const formData = new FormData();
         formData.append("file", file);
         formData.append("knowledge_base_id", String(selectedBaseId));
-        response = await fetch("http://localhost:8000/api/extract", { method: "POST", body: formData });
+        response = await apiFetch("/api/extract", { method: "POST", body: formData });
       } else {
         if (!textInput.trim()) throw new Error("请先输入需要解析的文本内容。");
         const formData = new FormData();
         formData.append("text", textInput);
         formData.append("knowledge_base_id", String(selectedBaseId));
-        response = await fetch("http://localhost:8000/api/extract", { method: "POST", body: formData });
+        response = await apiFetch("/api/extract", { method: "POST", body: formData });
       }
       const payload = await parseResponse(response);
       if (!response.ok) throw new Error(payload.detail || "解析失败，请稍后重试。");
@@ -630,7 +647,7 @@ export default function KnowledgeParsePage() {
       setMetaInfo(parts.join(" · "));
       setIsDrawerOpen(true);
     } catch (err) {
-      if (err instanceof TypeError) setError("无法连接到后端服务，请确认 http://localhost:8000 正在运行。");
+      if (err instanceof TypeError) setError(getBackendConnectionErrorMessage());
       else setError(err instanceof Error ? err.message : "解析失败，请检查前后端服务。");
     } finally {
       setIsLoading(false);
@@ -644,7 +661,7 @@ export default function KnowledgeParsePage() {
     setSaveMessage("");
     try {
       if (!selectedBaseId) throw new Error("请先选择目标知识库。");
-      const response = await fetch("http://localhost:8000/api/knowledge/save", {
+      const response = await apiFetch("/api/knowledge/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -664,7 +681,7 @@ export default function KnowledgeParsePage() {
       setSaveMessage("保存成功");
       await loadKnowledgeBases();
     } catch (err) {
-      if (err instanceof TypeError) setError("无法连接到后端服务，请确认 http://localhost:8000 正在运行。");
+      if (err instanceof TypeError) setError(getBackendConnectionErrorMessage());
       else setError(err instanceof Error ? err.message : "保存失败，请检查后端服务。");
     } finally {
       setIsSaving(false);
@@ -687,7 +704,7 @@ export default function KnowledgeParsePage() {
       const formData = new FormData();
       formData.append("file", templateFile);
       formData.append("knowledge_base_id", String(selectedBaseId));
-      const response = await fetch("http://localhost:8000/api/templates/fill", { method: "POST", body: formData });
+      const response = await apiFetch("/api/templates/fill", { method: "POST", body: formData });
       if (!response.ok) {
         const payload = (await response.json().catch(() => ({}))) as { detail?: string };
         throw new Error(payload.detail || "模板填充失败。");
@@ -721,7 +738,7 @@ export default function KnowledgeParsePage() {
     setError("");
     setSaveMessage("");
     try {
-      const response = await fetch("http://localhost:8000/api/knowledge-bases", {
+      const response = await apiFetch("/api/knowledge-bases", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newBaseName.trim() }),
@@ -748,7 +765,7 @@ export default function KnowledgeParsePage() {
     setError("");
     setSaveMessage("");
     try {
-      const response = await fetch(`http://localhost:8000/api/knowledge-bases/${knowledgeBaseId}`, { method: "DELETE" });
+      const response = await apiFetch(`/api/knowledge-bases/${knowledgeBaseId}`, { method: "DELETE" });
       const payload = (await response.json()) as SaveResponse;
       if (!response.ok) throw new Error(payload.detail || "删除知识库失败。");
       setSaveMessage("资料库已删除");
@@ -768,7 +785,7 @@ export default function KnowledgeParsePage() {
     }
     setRenamingBaseId(knowledgeBaseId);
     try {
-      const response = await fetch(`http://localhost:8000/api/knowledge-bases/${knowledgeBaseId}`, {
+      const response = await apiFetch(`/api/knowledge-bases/${knowledgeBaseId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: nextName }),
@@ -1039,6 +1056,30 @@ export default function KnowledgeParsePage() {
             <p className="mt-4 max-w-[520px] pl-[2px] text-[15px] leading-7 text-neutral-600 md:text-[18px]">
               履历如流，填表轻松。
             </p>
+            {desktopAppInfo?.isDesktop || isDesktopRuntime() ? (
+              <div className="mt-5 flex max-w-[760px] flex-wrap items-center gap-3 rounded-[1.4rem] border border-violet-200 bg-white/80 px-4 py-3 text-sm text-neutral-700 shadow-[0_12px_24px_rgba(139,92,246,0.08)]">
+                <span className="rounded-full bg-violet-100 px-3 py-1 font-semibold text-violet-700">
+                  桌面版 {desktopAppInfo?.version ?? ""}
+                </span>
+                <span>本地服务会随应用自动启动，数据默认保存在本机用户目录。</span>
+              </div>
+            ) : null}
+            {desktopBackendStatus?.missingConfigKeys.length ? (
+              <div className="mt-4 flex max-w-[820px] flex-wrap items-center gap-3 rounded-[1.5rem] border border-amber-200 bg-amber-50/90 px-4 py-4 text-sm leading-6 text-amber-900 shadow-[0_12px_30px_rgba(245,158,11,0.12)]">
+                <span className="font-semibold">检测到桌面配置未完成：</span>
+                <span>{desktopBackendStatus.missingConfigKeys.join("、")}</span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-amber-300 bg-white text-amber-900 hover:bg-amber-100"
+                  onClick={() => {
+                    void window.desktopApp?.openConfigDirectory();
+                  }}
+                >
+                  打开配置目录
+                </Button>
+              </div>
+            ) : null}
           </div>
         </div>
 
