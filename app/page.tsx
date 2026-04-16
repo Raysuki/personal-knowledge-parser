@@ -352,6 +352,20 @@ function formatTimeLabel(value: string | null | undefined) {
   return value.replace("T", " ").replace("Z", "");
 }
 
+function resolveApiMessage(
+  message: string | null | undefined,
+  fallback: string,
+  options?: { duplicateFallback?: string },
+) {
+  const trimmed = (message ?? "").trim();
+  const duplicateFallback = options?.duplicateFallback ?? fallback;
+
+  if (!trimmed || /^[?？\s]+$/.test(trimmed)) return fallback;
+  if (/already\s+exists|duplicate|exists|已存在|重名/i.test(trimmed)) return duplicateFallback;
+
+  return trimmed;
+}
+
 function EditableField({
   label,
   value,
@@ -727,7 +741,13 @@ export default function KnowledgeParsePage() {
         body: JSON.stringify({ name: newBaseName.trim() }),
       });
       const payload = (await response.json()) as KnowledgeBaseCreateResponse;
-      if (!response.ok) throw new Error(payload.detail || "创建知识库失败。");
+      if (!response.ok) {
+        throw new Error(
+          resolveApiMessage(payload.detail, "创建知识库失败，请检查后重试。", {
+            duplicateFallback: "该知识库名称已存在，请更换一个名称。",
+          }),
+        );
+      }
       setNewBaseName("");
       setSaveMessage("知识库创建成功");
       setIsCreateModalOpen(false);
@@ -774,7 +794,13 @@ export default function KnowledgeParsePage() {
         body: JSON.stringify({ name: nextName }),
       });
       const payload = (await response.json()) as KnowledgeBaseRenameResponse;
-      if (!response.ok) throw new Error(payload.detail || "资料库名称更新失败。");
+      if (!response.ok) {
+        throw new Error(
+          resolveApiMessage(payload.detail, "资料库名称更新失败，请稍后重试。", {
+            duplicateFallback: "该知识库名称已存在，请更换一个名称。",
+          }),
+        );
+      }
       setSaveMessage("资料库名称已更新");
       setEditingBaseName("");
       await loadKnowledgeBases();
