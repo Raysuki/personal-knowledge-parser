@@ -1,10 +1,12 @@
 # ProfileFlow
 
+![ProfileFlow Logo](./docs/images/logo-top.jpeg)
+
 [中文说明 / Chinese Guide](./README_CN.md)
 
-ProfileFlow is an intelligent personal-profile management and autofill tool designed for students and job seekers. It lets users upload transcripts, certificates, resumes, internship proofs, research outputs, and other materials, then uses OCR, document parsing, and structured extraction to build a reusable personal knowledge base.
+ProfileFlow is an intelligent personal-profile management and autofill tool designed for students and job seekers. It supports transcripts, certificates, resumes, internship proofs, research outputs, and other application materials. With OCR, document parsing, and structured extraction, it turns scattered files into a reusable personal knowledge base.
 
-Once the knowledge base is created, ProfileFlow can match the most relevant personal information to form fields or document templates, helping users complete job applications, graduate-school applications, competition registrations, and other repetitive application tasks more efficiently.
+Once the knowledge base is built, ProfileFlow can match the most relevant personal information to document templates and repetitive application workflows, helping users complete job applications, graduate-school applications, competition registrations, and similar tasks more efficiently.
 
 Note: the current extraction prompts and built-in categories are optimized for Chinese-language materials.
 
@@ -14,8 +16,8 @@ Note: the current extraction prompts and built-in categories are optimized for C
 - Extract structured profile data with OCR + LLM-based parsing
 - Review and edit parsed data before saving
 - Store and reuse multiple local knowledge bases
-- Resolve form-filling workflows with Word template autofill
-- Support manual correction before final submission
+- Autofill Word templates with saved profile information
+- Keep a manual review step before final submission
 
 ## Recent Fix
 
@@ -36,6 +38,7 @@ app/                Next.js App Router pages
 components/         Reusable UI components
 lib/                Frontend utility helpers
 public/             Static assets
+docs/images/        README screenshots and images
 main.py             FastAPI backend entry
 requirements-backend.txt
 package.json
@@ -114,6 +117,44 @@ Open [http://localhost:3000](http://localhost:3000).
 6. Review the exported document before submission.
 
 For the full Chinese tutorial, see [README_CN.md](./README_CN.md).
+
+## Screenshot Guide
+
+### 1. Initial Page
+
+When no knowledge base has been created yet, the system starts from an empty state.
+
+![Initial Page](./docs/images/system-home.png)
+
+### 2. Upload and Parse Materials
+
+Select a target knowledge base, then upload files or paste text for extraction.
+
+![Upload and Parse](./docs/images/upload-parse.png)
+
+### 3. Review and Edit Extraction Results
+
+After parsing, review the extracted profile fields and manually correct any missing or inaccurate items before saving.
+
+![Review Extraction Results](./docs/images/parse-result-edit.png)
+
+### 4. Enter Autofill Workflow
+
+Choose the saved knowledge base and open the autofill entry.
+
+![Autofill Entry](./docs/images/autofill-entry.png)
+
+### 5. Download the Generated File
+
+After uploading a Word template, the generated file will be downloaded automatically.
+
+![Auto Download](./docs/images/auto-download.png)
+
+### 6. Final Filled Result
+
+Review the exported document one more time before submitting it externally.
+
+![Filled Result](./docs/images/filled-result.png)
 
 ## Notes
 
