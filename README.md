@@ -1,6 +1,6 @@
 # ProfileFlow
 
-ProfileFlow is a resume and personal-profile parsing tool with a Next.js frontend and a FastAPI backend. It can extract structured information from images, PDFs, DOCX, TXT, or pasted text, then let you review, edit, store, and reuse the results in a local knowledge base.
+ProfileFlow is a resume and personal-profile parsing tool with a Next.js frontend and a FastAPI backend. It can extract structured information from images, PDFs, DOCX, TXT, or pasted text, then let you review, edit, store, and reuse the results in a local knowledge base.(Currently only supports Chinese)
 
 ## Features
 
