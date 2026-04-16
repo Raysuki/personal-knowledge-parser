@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useRef, useState, type DragEvent, type PointerEvent, type WheelEvent } from "react";
 import {
@@ -342,7 +342,7 @@ function mergeParsedResult(base: ParsedResult, incoming: ParsedResult): ParsedRe
 
 function parseCourses(value: string) {
   return value
-    .split(/[,锛屻€乗n]/)
+    .split(/[,\uFF0C\u3001\r\n]+/)
     .map((item) => item.trim())
     .filter(Boolean);
 }
@@ -1261,7 +1261,7 @@ export default function KnowledgeParsePage() {
       </div>
       {toast ? (
         <div className={cn("fixed left-1/2 top-1/2 z-[120] -translate-x-1/2 -translate-y-1/2 transition-all duration-500", toast.visible ? "opacity-100 scale-100" : "opacity-0 scale-95")}>
-          <div className={cn("min-w-[280px] rounded-[1.6rem] border border-white/10 bg-black/62 px-6 py-4 text-center text-lg text-white shadow-[0_18px_40px_rgba(0,0,0,0.24)] backdrop-blur-xl", toast.tone === "error" ? "ring-1 ring-rose-400/25" : "ring-1 ring-white/10")}>
+          <div className={cn("min-w-[280px] rounded-[1.6rem] border border-violet-200 bg-white px-6 py-4 text-center text-lg font-semibold text-violet-700 shadow-[0_18px_40px_rgba(139,92,246,0.16)] backdrop-blur-xl", toast.tone === "error" ? "ring-1 ring-rose-200/60 text-violet-800" : "ring-1 ring-violet-100")}>
             {toast.message}
           </div>
         </div>
