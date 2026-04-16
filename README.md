@@ -1,15 +1,26 @@
 # ProfileFlow
 
-ProfileFlow is a resume and personal-profile parsing tool with a Next.js frontend and a FastAPI backend. It can extract structured information from images, PDFs, DOCX, TXT, or pasted text, then let you review, edit, store, and reuse the results in a local knowledge base.(Currently only supports Chinese)
+[中文说明 / Chinese Guide](./README_CN.md)
+
+ProfileFlow is an intelligent personal-profile management and autofill tool designed for students and job seekers. It lets users upload transcripts, certificates, resumes, internship proofs, research outputs, and other materials, then uses OCR, document parsing, and structured extraction to build a reusable personal knowledge base.
+
+Once the knowledge base is created, ProfileFlow can match the most relevant personal information to form fields or document templates, helping users complete job applications, graduate-school applications, competition registrations, and other repetitive application tasks more efficiently.
+
+Note: the current extraction prompts and built-in categories are optimized for Chinese-language materials.
 
 ## Features
 
-- Upload files or paste raw text for profile extraction
-- Support image, PDF, DOCX, and TXT inputs
-- Use OCR and LLM-based parsing to turn unstructured content into structured profile data
-- Edit parsed basic info, education history, certificates, languages, and experience records
-- Save results into a local SQLite knowledge base
-- Fill templates with structured data
+- Parse images, PDFs, DOCX, TXT files, or pasted raw text
+- Extract structured profile data with OCR + LLM-based parsing
+- Review and edit parsed data before saving
+- Store and reuse multiple local knowledge bases
+- Resolve form-filling workflows with Word template autofill
+- Support manual correction before final submission
+
+## Recent Fix
+
+- Fixed image-upload extraction returning blank results in environments using newer PaddleOCR output formats
+- Added compatibility handling for both legacy and newer OCR response structures
 
 ## Tech Stack
 
@@ -24,6 +35,7 @@ ProfileFlow is a resume and personal-profile parsing tool with a Next.js fronten
 app/                Next.js App Router pages
 components/         Reusable UI components
 lib/                Frontend utility helpers
+public/             Static assets
 main.py             FastAPI backend entry
 requirements-backend.txt
 package.json
@@ -37,7 +49,7 @@ package.json
 
 ## Environment Variables
 
-Create a `.env` file in the project root and configure the backend variables as needed:
+Create a `.env` file in the project root:
 
 ```env
 ARK_API_KEY=your_api_key
@@ -92,8 +104,19 @@ Open [http://localhost:3000](http://localhost:3000).
 - `POST /api/templates/fill`
 - `GET /health`
 
+## Quick User Flow
+
+1. Create a knowledge base for a specific scenario, such as job applications or graduate-school applications.
+2. Upload materials or paste text into the parser.
+3. Review and correct extracted profile fields.
+4. Save the cleaned result into the selected knowledge base.
+5. Upload a Word template and let ProfileFlow autofill it.
+6. Review the exported document before submission.
+
+For the full Chinese tutorial, see [README_CN.md](./README_CN.md).
+
 ## Notes
 
 - The local SQLite database is ignored in Git by default.
-- Build output and cache folders are also ignored to keep the repository clean.
+- Build output and cache folders are ignored to keep the repository clean.
 - Some OCR and model features depend on external service credentials being configured correctly.

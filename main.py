@@ -912,6 +912,48 @@ def get_ocr_engine():
     return _ocr_engine
 
 
+def collect_texts_from_ocr_result(result: Any) -> List[str]:
+    texts: List[str] = []
+
+    def append_text(value: Any) -> None:
+        if value is None:
+            return
+        text = str(value).strip()
+        if text:
+            texts.append(text)
+
+    def walk(node: Any) -> None:
+        if node is None:
+            return
+
+        if isinstance(node, dict):
+            rec_texts = node.get("rec_texts")
+            if isinstance(rec_texts, list):
+                for item in rec_texts:
+                    append_text(item)
+                return
+
+            text_value = node.get("text")
+            if isinstance(text_value, str):
+                append_text(text_value)
+                return
+
+            for value in node.values():
+                walk(value)
+            return
+
+        if isinstance(node, (list, tuple)):
+            if len(node) >= 2 and isinstance(node[1], (list, tuple)) and node[1]:
+                append_text(node[1][0])
+                return
+
+            for item in node:
+                walk(item)
+
+    walk(result)
+    return texts
+
+
 def run_ocr_on_image(image: Image.Image) -> str:
     ocr = get_ocr_engine()
     image_array = np.array(image)
@@ -921,14 +963,7 @@ def run_ocr_on_image(image: Image.Image) -> str:
     except Exception as exc:
         raise HTTPException(status_code=500, detail="OCR 识别失败: {0}".format(exc)) from exc
 
-    texts: List[str] = []
-    for page in result or []:
-        for line in page or []:
-            if len(line) < 2:
-                continue
-            text = line[1][0].strip()
-            if text:
-                texts.append(text)
+    texts = collect_texts_from_ocr_result(result)
 
     if not texts:
         raise HTTPException(status_code=400, detail="OCR 未识别到有效文本")
